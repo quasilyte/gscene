@@ -59,7 +59,12 @@ func NewScene[T any](ctx T, controller Controller[T]) *Scene[T] {
 // Context returns the context bound to this scene at the moment of its creation.
 func (s *Scene[T]) Context() T { return s.context }
 
-// Update calls the Update methods on the entire scene tree.
+// Update is a shorthand for UpdateWithDelta(1.0/60.0).
+func (s *Scene[T]) Update() {
+	s.UpdateWithDelta(1.0 / 60.0)
+}
+
+// UpdateWithDelta calls the Update methods on the entire scene tree.
 //
 // First, it calls an Update on the controller.
 //
@@ -67,7 +72,7 @@ func (s *Scene[T]) Context() T { return s.context }
 // The Update call order is identical to the AddObject order that was used before.
 //
 // Disposed object are removed from the objects list.
-func (s *Scene[T]) Update(delta float64) {
+func (s *Scene[T]) UpdateWithDelta(delta float64) {
 	// The scene controller receives the Update call first.
 	s.controller.Update(delta)
 
