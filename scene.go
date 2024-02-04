@@ -123,3 +123,8 @@ func (s *Scene[T]) AddObject(o Object[T]) {
 	s.addedObjects = append(s.addedObjects, o)
 	o.Init(s)
 }
+
+// AddGraphics adds the graphical object to the scene.
+func (s *Scene[T]) AddGraphics(g Graphics) {
+	s.graphics = append(s.graphics, g)
+}
