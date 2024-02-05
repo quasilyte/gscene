@@ -1,2 +1,3 @@
 # gscene
-A lightweight scene package for Ebitengine
+
+A lightweight scene package for Ebitengine.

@@ -119,12 +119,28 @@ func (s *Scene[T]) Draw(screen *ebiten.Image) {
 // The AddObject method adds the object to the add-queue.
 // The object will be actually added at the end of the current
 // Update method's life cycle.
+//
+// This object will be automatically removed from the scene
+// when its IsDisposed method will report true.
+//
+// All added objects are stored inside the scene.
+// If they're only reachable between each other and the scene,
+// they can be easily garbage-collected as soon as this scene
+// will be garbage-collected (there is usually only 1 active scene at a time).
 func (s *Scene[T]) AddObject(o Object[T]) {
 	s.addedObjects = append(s.addedObjects, o)
 	o.Init(s)
 }
 
 // AddGraphics adds the graphical object to the scene.
+//
+// This object will be automatically removed from the scene
+// when its IsDisposed method will report true.
+//
+// All added objects are stored inside the scene.
+// If they're only reachable between each other and the scene,
+// they can be easily garbage-collected as soon as this scene
+// will be garbage-collected (there is usually only 1 active scene at a time).
 func (s *Scene[T]) AddGraphics(g Graphics) {
 	s.graphics = append(s.graphics, g)
 }
