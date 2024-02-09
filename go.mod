@@ -1,6 +1,6 @@
 module github.com/quasilyte/gscene
 
-go 1.22rc1
+go 1.22
 
 require github.com/hajimehoshi/ebiten/v2 v2.6.5
 

@@ -1,9 +1,5 @@
 package gscene
 
-import (
-	"github.com/hajimehoshi/ebiten/v2"
-)
-
 // Scene creates a logical scope and lifetime for game objects and graphics.
 // Your root ebiten.Game will now only call the current scene's Update and Draw
 // instead of trying to manage all the objects and graphics.
@@ -27,90 +23,14 @@ import (
 // After that, you can use your Scene type alias everywhere.
 //
 // Note that more often than not you want to use a pointer-typed context.
-type Scene[T any] struct {
-	controller Controller[T]
-
-	objects      []Object[T]
-	addedObjects []Object[T]
-
-	graphics []Graphics
-
-	context T
+type Scene[ControllerAccessor any] struct {
+	root *RootScene[ControllerAccessor]
 }
 
-// NewScene allocates a new scene bound to the given controller.
-// The controller's Init will be called in the process.
-//
-// The provided context will be stored inside Scene.Context field
-// and will be accessible later.
-// The scene doesn't try to use that context, it's for the user-side
-// to interpret it.
-func NewScene[T any](ctx T, controller Controller[T]) *Scene[T] {
-	s := &Scene[T]{
-		controller:   controller,
-		objects:      make([]Object[T], 0, 32),
-		addedObjects: make([]Object[T], 0, 8),
-		context:      ctx,
-	}
-	controller.Init(s)
-	return s
-}
-
-// Context returns the context bound to this scene at the moment of its creation.
-func (s *Scene[T]) Context() T { return s.context }
-
-// Update is a shorthand for UpdateWithDelta(1.0/60.0).
-func (s *Scene[T]) Update() {
-	s.UpdateWithDelta(1.0 / 60.0)
-}
-
-// UpdateWithDelta calls the Update methods on the entire scene tree.
-//
-// First, it calls an Update on the controller.
-//
-// Then it calls the Update methods on scene objects that are not disposed.
-// The Update call order is identical to the AddObject order that was used before.
-//
-// Disposed object are removed from the objects list.
-func (s *Scene[T]) UpdateWithDelta(delta float64) {
-	// The scene controller receives the Update call first.
-	s.controller.Update(delta)
-
-	// Call every active object's Update, filter
-	// the objects list in-place while at it.
-	liveObjects := s.objects[:0]
-	for _, o := range s.objects {
-		if o.IsDisposed() {
-			continue
-		}
-		o.Update(delta)
-		liveObjects = append(liveObjects, o)
-	}
-	s.objects = liveObjects
-
-	// Flush the added objects to the list.
-	s.objects = append(s.objects, s.addedObjects...)
-	s.addedObjects = s.addedObjects[:0]
-}
-
-// Draw calls the Draw methods on the entire scene tree.
-//
-// It calls the Draw methods on scene graphics that are not disposed.
-// The Draw call order is identical to the AddGraphics order that was used before.
-//
-// Disposed graphics are removed from the objects list.
-func (s *Scene[T]) Draw(screen *ebiten.Image) {
-	// Just like in Update. The only difference is the method
-	// being called is Draw, not Update (and there is no delta).
-	liveGraphics := s.graphics[:0]
-	for _, g := range s.graphics {
-		if g.IsDisposed() {
-			continue
-		}
-		g.Draw(screen)
-		liveGraphics = append(liveGraphics, g)
-	}
-	s.graphics = liveGraphics
+// Controller returns the bound controller as its accessor interface.
+// It can be used to access some scene-specific typed data.
+func (s *Scene[ControllerAccessor]) Controller() ControllerAccessor {
+	return s.root.controllerAccessor
 }
 
 // AddObject adds the logical object to the scene.
@@ -128,8 +48,7 @@ func (s *Scene[T]) Draw(screen *ebiten.Image) {
 // they can be easily garbage-collected as soon as this scene
 // will be garbage-collected (there is usually only 1 active scene at a time).
 func (s *Scene[T]) AddObject(o Object[T]) {
-	s.addedObjects = append(s.addedObjects, o)
-	o.Init(s)
+	s.root.AddObject(o)
 }
 
 // AddGraphics adds the graphical object to the scene.
@@ -142,5 +61,5 @@ func (s *Scene[T]) AddObject(o Object[T]) {
 // they can be easily garbage-collected as soon as this scene
 // will be garbage-collected (there is usually only 1 active scene at a time).
 func (s *Scene[T]) AddGraphics(g Graphics) {
-	s.graphics = append(s.graphics, g)
+	s.root.AddGraphics(g)
 }
