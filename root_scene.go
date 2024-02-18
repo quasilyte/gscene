@@ -4,6 +4,17 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
+// SimpleRootScene is a type alias for a scene that doesn't need
+// its object to have any typed access to the controller via the scene.
+//
+// This kind of a scene is a norm for game screens that are mostly
+// ui-focused instead of being gameplay-rich.
+//
+// You may not need this type alias and that's OK too.
+// It serves an example that unnecessary generics parameters can
+// be hiden when wanted.
+type SimpleRootScene = RootScene[any]
+
 type RootScene[ControllerAccessor any] struct {
 	// Since we can't combine 2 interface parts into one,
 	// we'll use two interface-typed objects here.
