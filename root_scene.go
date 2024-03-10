@@ -1,6 +1,8 @@
 package gscene
 
 import (
+	"fmt"
+
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -47,7 +49,14 @@ type RootScene[ControllerAccessor any] struct {
 // objects are defined in the same package (therefore an object can have a controller's
 // type available for the type assertion).
 func NewRootScene[ControllerAccessor any](c Controller[ControllerAccessor]) *RootScene[ControllerAccessor] {
-	accessor, _ := c.(ControllerAccessor)
+	accessor, ok := c.(ControllerAccessor)
+	if !ok {
+		// This is a sanity check.
+		// If ControllerAccessor is any, anything will implement it.
+		// If ControllerAccessor is not any, the library user wants to implement
+		// that interface by their controller in 99.(9)% cases.
+		panic(fmt.Sprintf("given controller doesn't implement %T (ControllerAccessor interface)", (*ControllerAccessor)(nil)))
+	}
 	root := &RootScene[ControllerAccessor]{
 		controllerObject:   c,
 		controllerAccessor: accessor,
