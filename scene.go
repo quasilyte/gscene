@@ -14,10 +14,6 @@ import (
 // (unless you keep the pointer to them somewhere else).
 // Therefore, you should avoid the unnecessary global state whether possible.
 type Scene struct {
-	// Since we can't combine 2 interface parts into one,
-	// we'll use two interface-typed objects here.
-	// In practice, both of them will have the same underlying object
-	// that implements the scene controller.
 	controllerObject Controller
 
 	objects      []Object
