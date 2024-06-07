@@ -32,7 +32,8 @@ var (
 func main() {
 	g := &myGame{}
 
-	g.currentScene = gscene.NewRootScene(&mySceneController{})
+	g.sceneManager = gscene.NewManager()
+	g.sceneManager.ChangeScene(&mySceneController{})
 
 	if err := ebiten.RunGame(g); err != nil {
 		panic(err)
@@ -42,11 +43,8 @@ func main() {
 // myGame implements [ebiten.Game] interface.
 // It's our top-level game runner that should call
 // the current scene's Update and Draw methods.
-//
-// To change the scene, simply change the currentScene
-// value to a new scene.
 type myGame struct {
-	currentScene *gscene.RootScene
+	sceneManager *gscene.Manager
 }
 
 func (g *myGame) Layout(int, int) (int, int) {
@@ -54,21 +52,21 @@ func (g *myGame) Layout(int, int) (int, int) {
 }
 
 func (g *myGame) Update() error {
-	g.currentScene.Update()
+	g.sceneManager.Update()
 	return nil
 }
 
 func (g *myGame) Draw(screen *ebiten.Image) {
-	g.currentScene.Draw(screen)
+	g.sceneManager.Draw(screen)
 }
 
 type mySceneController struct {
 	seq        int
-	scene      *gscene.RootScene
+	scene      *gscene.Scene
 	spawnDelay float64
 }
 
-func (c *mySceneController) Init(scene *gscene.RootScene) {
+func (c *mySceneController) Init(scene *gscene.Scene) {
 	c.scene = scene
 }
 
@@ -104,7 +102,7 @@ func (o *myObject) IsDisposed() bool {
 func (o *myObject) Init(scene *gscene.Scene) {
 	o.pos[1] = random.Float64() * float64(screenHeight)
 
-	o.speed = 32 * (random.Float64() + 0.5)
+	o.speed = 40 * (random.Float64() + 0.5)
 
 	// Note: we're "binding" the position of the graphics
 	// to the logical object field.

@@ -14,7 +14,7 @@ import (
 // to the current scene's lifetime.
 type Controller interface {
 	// Init is called once when a new scene is being created.
-	Init(*RootScene)
+	Init(*Scene)
 
 	// Update is called at every game's Update cycle.
 	// The controller's Update is called before any of the scene objects Update.
