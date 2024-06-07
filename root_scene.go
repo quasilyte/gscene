@@ -1,93 +1,111 @@
 package gscene
 
 import (
-	"fmt"
-
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-// SimpleRootScene is a type alias for a scene that doesn't need
-// its object to have any typed access to the controller via the scene.
-//
-// This kind of a scene is a norm for game screens that are mostly
-// ui-focused instead of being gameplay-rich.
-//
-// You may not need this type alias and that's OK too.
-// It serves an example that unnecessary generics parameters can
-// be hiden when wanted.
-type SimpleRootScene = RootScene[any]
-
-type RootScene[ControllerAccessor any] struct {
+type RootScene struct {
 	// Since we can't combine 2 interface parts into one,
 	// we'll use two interface-typed objects here.
 	// In practice, both of them will have the same underlying object
 	// that implements the scene controller.
-	controllerObject   Controller[ControllerAccessor]
-	controllerAccessor ControllerAccessor
+	controllerObject Controller
 
-	objects      []Object[ControllerAccessor]
-	addedObjects []Object[ControllerAccessor]
+	objects      []Object
+	addedObjects []Object
 
 	graphics []Graphics
 
 	// This is a single object that is used for every non-root object.
-	asScene *Scene[ControllerAccessor]
+	asScene *Scene
+
+	insideUpdate bool
 }
 
+type stopUpdateType struct{}
+
+var stopUpdate any = &stopUpdateType{}
+
 // NewRootScene allocates a new root scene bound to the given controller.
-// The controller's Init will be called in the process.
-//
-// The controller c can optionally implement an ControllerAccessor interface
-// to provide some data access to the scene objects.
-// For example, that interface may provide some shared game context and/or
-// graphical layers APIs (like AddGraphicsToLayer).
-//
-// If c doesn't implement ControllerAccessor, a nil value for the accessor will be used.
-// If ControllerAccessor is any (an empty interface), it'll have almost the same
-// meaning, but the scene objects may do a type assertion and query the data directly.
-// This second method is not recommended and it will only work if both controller and
-// objects are defined in the same package (therefore an object can have a controller's
-// type available for the type assertion).
-func NewRootScene[ControllerAccessor any](c Controller[ControllerAccessor]) *RootScene[ControllerAccessor] {
-	accessor, ok := c.(ControllerAccessor)
-	if !ok {
-		// This is a sanity check.
-		// If ControllerAccessor is any, anything will implement it.
-		// If ControllerAccessor is not any, the library user wants to implement
-		// that interface by their controller in 99.(9)% cases.
-		panic(fmt.Sprintf("given controller doesn't implement %T (ControllerAccessor interface)", (*ControllerAccessor)(nil)))
+// The [Controller.Init] will be called in the process.
+func NewRootScene(c Controller) *RootScene {
+	root := &RootScene{
+		controllerObject: c,
+		objects:          make([]Object, 0, 32),
+		addedObjects:     make([]Object, 0, 8),
 	}
-	root := &RootScene[ControllerAccessor]{
-		controllerObject:   c,
-		controllerAccessor: accessor,
-		objects:            make([]Object[ControllerAccessor], 0, 32),
-		addedObjects:       make([]Object[ControllerAccessor], 0, 8),
-	}
-	root.asScene = &Scene[ControllerAccessor]{
+	root.asScene = &Scene{
 		root: root,
 	}
 	c.Init(root)
 	return root
 }
 
-func (s *RootScene[ControllerAccessor]) AsScene() *Scene[ControllerAccessor] {
+// Dispose stops the current scene execution (even mid-update) and
+// discards the scene state.
+//
+// This is useful before switching the scene if you want to
+// abort the execution of the rest of the current Update tree.
+//
+// Calling Dispose is valid when either outside or inside of the Update call.
+// It's not valid to call it when inside the Draw tree.
+//
+// After this scene is disposed, it should not be used any further.
+func (s *RootScene) Dispose() {
+	s.objects = nil
+	s.addedObjects = nil
+	s.graphics = nil
+	s.controllerObject = nil
+
+	if s.insideUpdate {
+		s.insideUpdate = false
+		panic(stopUpdate)
+	}
+}
+
+func (s *RootScene) AsScene() *Scene {
 	return s.asScene
 }
 
-// Update is a shorthand for UpdateWithDelta(1.0/60.0).
-func (s *RootScene[ControllerAccessor]) Update() {
+// Update is a shorthand for [UpdateWithDelta](1.0/60.0).
+func (s *RootScene) Update() {
 	s.UpdateWithDelta(1.0 / 60.0)
 }
 
 // UpdateWithDelta calls the Update methods on the entire scene tree.
 //
-// First, it calls an Update on the controller.
+// First, it calls the bound [Controller.Update].
 //
-// Then it calls the Update methods on scene objects that are not disposed.
+// Then it calls the [Object.Update] methods on scene objects that are not disposed.
 // The Update call order is identical to the AddObject order that was used before.
 //
 // Disposed object are removed from the objects list.
-func (s *RootScene[ControllerAccessor]) UpdateWithDelta(delta float64) {
+func (s *RootScene) UpdateWithDelta(delta float64) {
+	// We have two methods: UpdateWithDelta and updateWithDelta.
+	// UpdateWithDelta is needed to create a guarding defer call
+	// that would catch the update cancelling message.
+	// updateWithDelta implements the actual update logic.
+
+	defer func() {
+		rv := recover()
+		if rv == nil {
+			return // The most common case
+		}
+		if rv == stopUpdate {
+			// This is our way to break out of the Update
+			// tree; no need to re-panic it.
+			return
+		}
+		// Some real panic is happening.
+		panic(rv)
+	}()
+
+	s.insideUpdate = true
+	s.updateWithDelta(delta)
+	s.insideUpdate = false
+}
+
+func (s *RootScene) updateWithDelta(delta float64) {
 	// The scene controller receives the Update call first.
 	s.controllerObject.Update(delta)
 
@@ -114,7 +132,7 @@ func (s *RootScene[ControllerAccessor]) UpdateWithDelta(delta float64) {
 // The Draw call order is identical to the AddGraphics order that was used before.
 //
 // Disposed graphics are removed from the objects list.
-func (s *RootScene[T]) Draw(screen *ebiten.Image) {
+func (s *RootScene) Draw(screen *ebiten.Image) {
 	// Just like in Update. The only difference is the method
 	// being called is Draw, not Update (and there is no delta).
 	liveGraphics := s.graphics[:0]
@@ -129,20 +147,20 @@ func (s *RootScene[T]) Draw(screen *ebiten.Image) {
 }
 
 // AddObject adds the logical object to the scene.
-// Its Init method will be called right away.
+// Its [Object.Init] method will be called right away.
 //
-// The AddObject method adds the object to the add-queue.
+// The [AddObject] method adds the object to the add-queue.
 // The object will be actually added at the end of the current
 // Update method's life cycle.
 //
 // This object will be automatically removed from the scene
-// when its IsDisposed method will report true.
+// when its [Object.IsDisposed] method reports true.
 //
 // All added objects are stored inside the scene.
 // If they're only reachable between each other and the scene,
 // they can be easily garbage-collected as soon as this scene
 // will be garbage-collected (there is usually only 1 active scene at a time).
-func (s *RootScene[ControllerAccessor]) AddObject(o Object[ControllerAccessor]) {
+func (s *RootScene) AddObject(o Object) {
 	s.addedObjects = append(s.addedObjects, o)
 	o.Init(s.asScene)
 }
@@ -150,12 +168,12 @@ func (s *RootScene[ControllerAccessor]) AddObject(o Object[ControllerAccessor]) 
 // AddGraphics adds the graphical object to the scene.
 //
 // This object will be automatically removed from the scene
-// when its IsDisposed method will report true.
+// when its [Graphics.IsDisposed] method reports true.
 //
 // All added objects are stored inside the scene.
 // If they're only reachable between each other and the scene,
 // they can be easily garbage-collected as soon as this scene
 // will be garbage-collected (there is usually only 1 active scene at a time).
-func (s *RootScene[ControllerAccessor]) AddGraphics(g Graphics) {
+func (s *RootScene) AddGraphics(g Graphics) {
 	s.graphics = append(s.graphics, g)
 }

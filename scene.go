@@ -23,43 +23,43 @@ package gscene
 // After that, you can use your Scene type alias everywhere.
 //
 // Note that more often than not you want to use a pointer-typed context.
-type Scene[ControllerAccessor any] struct {
-	root *RootScene[ControllerAccessor]
+type Scene struct {
+	root *RootScene
 }
 
-// Controller returns the bound controller as its accessor interface.
-// It can be used to access some scene-specific typed data.
-func (s *Scene[ControllerAccessor]) Controller() ControllerAccessor {
-	return s.root.controllerAccessor
+// Controller returns the bound controller.
+// It can be used to access some scene-specific typed data if necessary.
+func (s *Scene) Controller() Controller {
+	return s.root.controllerObject
 }
 
 // AddObject adds the logical object to the scene.
-// Its Init method will be called right away.
+// Its [Object.Init] method will be called right away.
 //
-// The AddObject method adds the object to the add-queue.
+// The [AddObject] method adds the object to the add-queue.
 // The object will be actually added at the end of the current
 // Update method's life cycle.
 //
 // This object will be automatically removed from the scene
-// when its IsDisposed method will report true.
+// when its [Object.IsDisposed] method reports true.
 //
 // All added objects are stored inside the scene.
 // If they're only reachable between each other and the scene,
 // they can be easily garbage-collected as soon as this scene
 // will be garbage-collected (there is usually only 1 active scene at a time).
-func (s *Scene[T]) AddObject(o Object[T]) {
+func (s *Scene) AddObject(o Object) {
 	s.root.AddObject(o)
 }
 
 // AddGraphics adds the graphical object to the scene.
 //
 // This object will be automatically removed from the scene
-// when its IsDisposed method will report true.
+// when its [Graphics.IsDisposed] method reports true.
 //
 // All added objects are stored inside the scene.
 // If they're only reachable between each other and the scene,
 // they can be easily garbage-collected as soon as this scene
 // will be garbage-collected (there is usually only 1 active scene at a time).
-func (s *Scene[T]) AddGraphics(g Graphics) {
+func (s *Scene) AddGraphics(g Graphics) {
 	s.root.AddGraphics(g)
 }
