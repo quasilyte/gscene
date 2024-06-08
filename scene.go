@@ -15,7 +15,7 @@ import (
 // Therefore, you should avoid the unnecessary global state whether possible.
 type Scene struct {
 	controllerObject Controller
-	drawer           SceneDrawer
+	drawer           Drawer
 
 	objects      []Object
 	addedObjects []Object
@@ -155,7 +155,7 @@ func (s *Scene) draw(dst *ebiten.Image) {
 	s.drawer.Draw(dst)
 }
 
-func (s *Scene) setDrawer(d SceneDrawer) {
+func (s *Scene) setDrawer(d Drawer) {
 	// A simple sanity check.
 	if d, ok := d.(*simpleDrawer); ok {
 		if len(d.graphics) > 0 {

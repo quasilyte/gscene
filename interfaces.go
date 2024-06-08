@@ -10,13 +10,13 @@ type InitContext struct {
 	Scene *Scene
 }
 
-// SetSceneDrawer changes the scene [SceneDrawer] implementation.
+// SetDrawer changes the scene [Drawer] implementation.
 //
-// The default SceneDrawer is a single-layer implementation
+// The default Drawer is a single-layer implementation
 // that ignores layer index argument of AddGraphics and
 // renders all objects in the order they were added.
-// See [SceneDrawer] docs to learn more about how to implement a custom drawer.
-func (ctx *InitContext) SetSceneDrawer(d SceneDrawer) {
+// See [Drawer] docs to learn more about how to implement a custom drawer.
+func (ctx *InitContext) SetDrawer(d Drawer) {
 	ctx.Scene.setDrawer(d)
 }
 
@@ -78,7 +78,7 @@ type Graphics interface {
 	IsDisposed() bool
 }
 
-// SceneDrawer implements a smart drawable objects container.
+// Drawer implements a smart drawable objects container.
 //
 // [Scene] itself holds simple objects like [Object], but graphics are more complicated.
 // There are layers, cameras, and other stuff that needs to be handled properly.
@@ -86,7 +86,7 @@ type Graphics interface {
 //
 // There is a default implementation available plus some more in third-party libraries
 // like ebitengine-graphics.
-type SceneDrawer interface {
+type Drawer interface {
 	// AddGraphics is like [Scene.AddObject], but for [Graphics].
 	//
 	// The provided layer index specifies which layer should handle
@@ -99,13 +99,13 @@ type SceneDrawer interface {
 	// after sorting them by Y-axis.
 	AddGraphics(g Graphics, layer int)
 
-	// Draw is a [SceneDrawer] hook into [ebiten.Game] Draw tree.
+	// Draw is a [Drawer] hook into [ebiten.Game] Draw tree.
 	// The [Manager.Draw] will call the current Drawer's Draw method.
 	//
 	// The drawer is expected to draw all its layers to the [dst] image.
 	Draw(dst *ebiten.Image)
 
-	// Update is a [SceneDrawer] hook into [ebiten.Game] Update tree.
+	// Update is a [Drawer] hook into [ebiten.Game] Update tree.
 	// The [Manager.Update] will call the current Drawer's Update method.
 	//
 	// The drawer is not expected to do anything during this method,
