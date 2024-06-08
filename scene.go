@@ -15,11 +15,10 @@ import (
 // Therefore, you should avoid the unnecessary global state whether possible.
 type Scene struct {
 	controllerObject Controller
+	drawer           SceneDrawer
 
 	objects      []Object
 	addedObjects []Object
-
-	graphics []Graphics
 
 	insideUpdate bool
 }
@@ -73,8 +72,8 @@ func (s *Scene) AddObject(o Object) {
 // If they're only reachable between each other and the scene,
 // they can be easily garbage-collected as soon as this scene
 // will be garbage-collected (there is usually only 1 active scene at a time).
-func (s *Scene) AddGraphics(g Graphics) {
-	s.graphics = append(s.graphics, g)
+func (s *Scene) AddGraphics(g Graphics, layer int) {
+	s.drawer.AddGraphics(g, layer)
 }
 
 // dispose stops the current scene execution (even mid-update) and
@@ -90,8 +89,8 @@ func (s *Scene) AddGraphics(g Graphics) {
 func (s *Scene) dispose() {
 	s.objects = nil
 	s.addedObjects = nil
-	s.graphics = nil
 	s.controllerObject = nil
+	s.drawer = nil
 
 	if s.insideUpdate {
 		s.insideUpdate = false
@@ -144,21 +143,25 @@ func (s *Scene) updateWithDeltaImpl(delta float64) {
 	}
 	s.objects = liveObjects
 
+	// Drawer's update is called the last.
+	s.drawer.Update(delta)
+
 	// Flush the added objects to the list.
 	s.objects = append(s.objects, s.addedObjects...)
 	s.addedObjects = s.addedObjects[:0]
 }
 
-func (s *Scene) draw(screen *ebiten.Image) {
-	// Just like in Update. The only difference is the method
-	// being called is Draw, not Update (and there is no delta).
-	liveGraphics := s.graphics[:0]
-	for _, g := range s.graphics {
-		if g.IsDisposed() {
-			continue
+func (s *Scene) draw(dst *ebiten.Image) {
+	s.drawer.Draw(dst)
+}
+
+func (s *Scene) setDrawer(d SceneDrawer) {
+	// A simple sanity check.
+	if d, ok := d.(*simpleDrawer); ok {
+		if len(d.graphics) > 0 {
+			panic("setting a drawer after graphics were already added")
 		}
-		g.Draw(screen)
-		liveGraphics = append(liveGraphics, g)
 	}
-	s.graphics = liveGraphics
+
+	s.drawer = d
 }

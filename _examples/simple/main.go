@@ -66,8 +66,8 @@ type mySceneController struct {
 	spawnDelay float64
 }
 
-func (c *mySceneController) Init(scene *gscene.Scene) {
-	c.scene = scene
+func (c *mySceneController) Init(ctx gscene.InitContext) {
+	c.scene = ctx.Scene
 }
 
 func (c *mySceneController) Update(delta float64) {
@@ -113,7 +113,7 @@ func (o *myObject) Init(scene *gscene.Scene) {
 		text: fmt.Sprintf("object%d", o.id),
 		pos:  &o.pos,
 	}
-	scene.AddGraphics(o.label)
+	scene.AddGraphics(o.label, 0)
 }
 
 func (o *myObject) Update(delta float64) {

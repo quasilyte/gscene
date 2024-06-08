@@ -31,7 +31,8 @@ func (m *Manager) ChangeScene(c Controller) {
 	prevScene := m.currentScene
 
 	m.currentScene = newScene(c)
-	c.Init(m.currentScene)
+	m.currentScene.drawer = newSimpleDrawer()
+	c.Init(InitContext{Scene: m.currentScene})
 
 	if prevScene != nil {
 		prevScene.dispose()

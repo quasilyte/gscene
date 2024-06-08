@@ -53,7 +53,7 @@ func (g *myGame) Draw(screen *ebiten.Image) {
 
 type myFirstSceneController struct{}
 
-func (c *myFirstSceneController) Init(scene *gscene.Scene) {
+func (c *myFirstSceneController) Init(ctx gscene.InitContext) {
 	fmt.Println("running scene 1")
 	fmt.Println("> press enter to change the scene")
 }
@@ -66,7 +66,7 @@ func (c *myFirstSceneController) Update(delta float64) {
 
 type mySecondSceneController struct{}
 
-func (c *mySecondSceneController) Init(scene *gscene.Scene) {
+func (c *mySecondSceneController) Init(ctx gscene.InitContext) {
 	fmt.Println("running scene 2")
 	fmt.Println("> press enter to change the scene back")
 }
