@@ -63,17 +63,15 @@ func (s *Scene) AddObject(o Object) {
 	o.Init(s)
 }
 
-// AddGraphics adds the graphical object to the scene.
-//
-// This object will be automatically removed from the scene
-// when its [Graphics.IsDisposed] method reports true.
-//
-// All added objects are stored inside the scene.
-// If they're only reachable between each other and the scene,
-// they can be easily garbage-collected as soon as this scene
-// will be garbage-collected (there is usually only 1 active scene at a time).
+// AddGraphics is a shorthand for s.Viewport(0).AddGraphics(g, layer).
 func (s *Scene) AddGraphics(g Graphics, layer int) {
-	s.drawer.AddGraphics(g, layer)
+	s.drawer.Viewport(0).AddGraphics(g, layer)
+}
+
+// Viewport returns the nth viewport associated with the current scene [Drawer].
+// If you only have a single [Viewport], use [AddGraphics] method instead.
+func (s *Scene) Viewport(index int) Viewport {
+	return s.drawer.Viewport(index)
 }
 
 // dispose stops the current scene execution (even mid-update) and

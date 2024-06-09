@@ -15,6 +15,8 @@ type InitContext struct {
 // The default Drawer is a single-layer implementation
 // that ignores layer index argument of AddGraphics and
 // renders all objects in the order they were added.
+// It also returns the same single object for any [Drawer.Viewport] id argument.
+//
 // See [Drawer] docs to learn more about how to implement a custom drawer.
 func (ctx *InitContext) SetDrawer(d Drawer) {
 	ctx.Scene.setDrawer(d)
@@ -67,7 +69,11 @@ type Object interface {
 // You rarely need to write your own [Graphics] implementation.
 // You can find the most popular implementations like Sprite
 // in ebitengine-graphics package.
-type Graphics interface {
+//
+// Defined as a type alias to an anonymous interface to allow implementations
+// that do now directly name this type.
+// This is used in ebitengine-graphics package, for example.
+type Graphics = interface {
 	// Draw implements the rendering method of this graphics object.
 	Draw(dst *ebiten.Image)
 
@@ -78,15 +84,14 @@ type Graphics interface {
 	IsDisposed() bool
 }
 
-// Drawer implements a smart drawable objects container.
+// Viewport is a rendering destination on the screen.
+// It's layer-based: every graphical object belongs to some layer.
+// See [AddGraphics] documentation to learn more.
 //
-// [Scene] itself holds simple objects like [Object], but graphics are more complicated.
-// There are layers, cameras, and other stuff that needs to be handled properly.
-// This is why drawing can be configured via the interface.
-//
-// There is a default implementation available plus some more in third-party libraries
-// like ebitengine-graphics.
-type Drawer interface {
+// Defined as a type alias to an anonymous interface to allow implementations
+// that do now directly name this type.
+// This is used in ebitengine-graphics package, for example.
+type Viewport = interface {
 	// AddGraphics is like [Scene.AddObject], but for [Graphics].
 	//
 	// The provided layer index specifies which layer should handle
@@ -98,12 +103,21 @@ type Drawer interface {
 	// For example, a Y-sort style layer would draw its elements
 	// after sorting them by Y-axis.
 	AddGraphics(g Graphics, layer int)
+}
 
-	// Draw is a [Drawer] hook into [ebiten.Game] Draw tree.
-	// The [Manager.Draw] will call the current Drawer's Draw method.
-	//
-	// The drawer is expected to draw all its layers to the [dst] image.
-	Draw(dst *ebiten.Image)
+// Drawer implements a drawable objects container.
+//
+// [Scene] itself holds update tree objects like [Object],
+// but graphics (draw tree) are more complicated.
+// There are layers, cameras, and other stuff that needs to be handled properly.
+// This is why drawing can be configured via the interface.
+//
+// There is a default implementation available plus some more
+// in third-party libraries like ebitengine-graphics.
+type Drawer interface {
+	// Viewport returns nth viewport from the drawer.
+	// Some implementations may only support a single viewport.
+	Viewport(index int) Viewport
 
 	// Update is a [Drawer] hook into [ebiten.Game] Update tree.
 	// The [Manager.Update] will call the current Drawer's Update method.
@@ -113,4 +127,10 @@ type Drawer interface {
 	// Doing so inside the update tree might be better to waste less
 	// CPU cycles for irrelevant task inside the draw tree.
 	Update(delta float64)
+
+	// Draw is a [Drawer] hook into [ebiten.Game] Draw tree.
+	// The [Manager.Draw] will call the current Drawer's Draw method.
+	//
+	// The drawer is expected to draw all its layers to the [dst] image.
+	Draw(dst *ebiten.Image)
 }
