@@ -63,15 +63,10 @@ func (s *Scene) AddObject(o Object) {
 	o.Init(s)
 }
 
-// AddGraphics is a shorthand for s.Viewport(0).AddGraphics(g, layer).
+// AddGraphics adds the graphical object to the scene
+// at the layer specified by its index.
 func (s *Scene) AddGraphics(g Graphics, layer int) {
-	s.drawer.Viewport(0).AddGraphics(g, layer)
-}
-
-// Viewport returns the nth viewport associated with the current scene [Drawer].
-// If you only have a single [Viewport], use [AddGraphics] method instead.
-func (s *Scene) Viewport(index int) Viewport {
-	return s.drawer.Viewport(index)
+	s.drawer.AddGraphics(g, layer)
 }
 
 // dispose stops the current scene execution (even mid-update) and

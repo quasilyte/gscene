@@ -12,10 +12,6 @@ func newSimpleDrawer() *simpleDrawer {
 	return &simpleDrawer{}
 }
 
-func (d *simpleDrawer) Viewport(index int) Viewport {
-	return d
-}
-
 func (d *simpleDrawer) Update(delta float64) {
 	liveGraphics := d.graphics[:0]
 	for _, g := range d.graphics {

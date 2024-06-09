@@ -15,7 +15,6 @@ type InitContext struct {
 // The default Drawer is a single-layer implementation
 // that ignores layer index argument of AddGraphics and
 // renders all objects in the order they were added.
-// It also returns the same single object for any [Drawer.Viewport] id argument.
 //
 // See [Drawer] docs to learn more about how to implement a custom drawer.
 func (ctx *InitContext) SetDrawer(d Drawer) {
@@ -36,7 +35,7 @@ type Controller interface {
 	Init(ctx InitContext)
 
 	// Update is called at every game's Update cycle.
-	// The controller's Update is called before any of the scene objects Update.
+	// The conчtroller's Update is called before any of the scene objects Update.
 	Update(delta float64)
 }
 
@@ -84,14 +83,16 @@ type Graphics = interface {
 	IsDisposed() bool
 }
 
-// Viewport is a rendering destination on the screen.
-// It's layer-based: every graphical object belongs to some layer.
-// See [AddGraphics] documentation to learn more.
+// Drawer implements a drawable objects container.
 //
-// Defined as a type alias to an anonymous interface to allow implementations
-// that do now directly name this type.
-// This is used in ebitengine-graphics package, for example.
-type Viewport = interface {
+// [Scene] itself holds update tree objects like [Object],
+// but graphics (draw tree) are more complicated.
+// There are layers, cameras, and other stuff that needs to be handled properly.
+// This is why drawing can be configured via the interface.
+//
+// There is a default implementation available plus some more
+// in third-party libraries like ebitengine-graphics.
+type Drawer interface {
 	// AddGraphics is like [Scene.AddObject], but for [Graphics].
 	//
 	// The provided layer index specifies which layer should handle
@@ -103,21 +104,6 @@ type Viewport = interface {
 	// For example, a Y-sort style layer would draw its elements
 	// after sorting them by Y-axis.
 	AddGraphics(g Graphics, layer int)
-}
-
-// Drawer implements a drawable objects container.
-//
-// [Scene] itself holds update tree objects like [Object],
-// but graphics (draw tree) are more complicated.
-// There are layers, cameras, and other stuff that needs to be handled properly.
-// This is why drawing can be configured via the interface.
-//
-// There is a default implementation available plus some more
-// in third-party libraries like ebitengine-graphics.
-type Drawer interface {
-	// Viewport returns nth viewport from the drawer.
-	// Some implementations may only support a single viewport.
-	Viewport(index int) Viewport
 
 	// Update is a [Drawer] hook into [ebiten.Game] Update tree.
 	// The [Manager.Update] will call the current Drawer's Update method.
