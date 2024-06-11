@@ -24,6 +24,10 @@ func NewManager() *Manager {
 //
 // If there is another scene running during the time [ChangeScene]
 // is called, its execution will be stopped.
+// This means that ChangeScene should be treated as a control transfer
+// call, it will not return and continue from the point it was called.
+// After the scene is changed, no logic that is part of the Update tree
+// from the old scene will be executed.
 //
 // The [Controller.Init] method of [c] will be called after
 // this new scene is installed.
