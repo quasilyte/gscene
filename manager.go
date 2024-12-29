@@ -47,6 +47,10 @@ func (m *Manager) CurrentScene() *Scene {
 	return m.currentScene
 }
 
+func (m *Manager) IsDisposed() bool {
+	return false
+}
+
 // Update is a shorthand for [UpdateWithDelta](1.0/60.0).
 func (m *Manager) Update() {
 	m.currentScene.update()
