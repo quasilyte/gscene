@@ -13,6 +13,7 @@ import (
 // Put it somewhere in your game's context.
 type Manager struct {
 	currentScene *Scene
+	disposed     bool
 }
 
 func NewManager() *Manager {
@@ -48,7 +49,11 @@ func (m *Manager) CurrentScene() *Scene {
 }
 
 func (m *Manager) IsDisposed() bool {
-	return false
+	return m.disposed
+}
+
+func (m *Manager) Dispose() {
+	m.disposed = true
 }
 
 // Update is a shorthand for [UpdateWithDelta](1.0/60.0).
