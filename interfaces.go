@@ -109,9 +109,7 @@ type Drawer interface {
 	// The [Manager.Update] will call the current Drawer's Update method.
 	//
 	// The drawer is not expected to do anything during this method,
-	// but it might be a good place to filter-out disposed graphical objects.
-	// Doing so inside the update tree might be better to waste less
-	// CPU cycles for irrelevant task inside the draw tree.
+	// but it might be a good place for metadata updates and/or debugging.
 	Update(delta float64)
 
 	// Draw is a [Drawer] hook into [ebiten.Game] Draw tree.

@@ -5,7 +5,8 @@ import (
 )
 
 type simpleDrawer struct {
-	graphics []Graphics
+	graphics   []Graphics
+	needFilter bool
 }
 
 func newSimpleDrawer() *simpleDrawer {
@@ -13,6 +14,10 @@ func newSimpleDrawer() *simpleDrawer {
 }
 
 func (d *simpleDrawer) Update(delta float64) {
+	d.needFilter = true
+}
+
+func (d *simpleDrawer) filter() {
 	liveGraphics := d.graphics[:0]
 	for _, g := range d.graphics {
 		if g.IsDisposed() {
@@ -24,6 +29,11 @@ func (d *simpleDrawer) Update(delta float64) {
 }
 
 func (d *simpleDrawer) Draw(dst *ebiten.Image) {
+	if d.needFilter {
+		d.filter()
+	}
+	d.needFilter = false
+
 	for _, g := range d.graphics {
 		g.Draw(dst)
 	}
@@ -35,4 +45,5 @@ func (d *simpleDrawer) AddGraphics(g Graphics, layer int) {
 	}
 
 	d.graphics = append(d.graphics, g)
+	d.needFilter = true
 }

@@ -139,7 +139,8 @@ func (s *Scene) updateWithDeltaImpl(delta float64) {
 	// Drawer's update is called the last.
 	s.drawer.Update(delta)
 
-	// Flush the added objects to the list.
+	// Even if some of the added objects are already disposed,
+	// they can be added here and removed during the next Update.
 	s.objects = append(s.objects, s.addedObjects...)
 	s.addedObjects = s.addedObjects[:0]
 }
