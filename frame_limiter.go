@@ -19,7 +19,8 @@ import (
 // Where drawAll is your original Draw method that does
 // all the drawing.
 type FrameLimiter struct {
-	fps uint
+	fps   uint
+	dirty bool
 
 	drawMinDelay time.Duration
 	prevDrawTime time.Time
@@ -29,9 +30,28 @@ type FrameLimiter struct {
 // You can change the initial fps cap by using [SetFPS].
 // Using a value of 0 means "no FPS cap".
 func NewFrameLimiter(fps uint) *FrameLimiter {
-	l := &FrameLimiter{}
+	l := &FrameLimiter{dirty: true}
 	l.SetFPS(fps)
 	return l
+}
+
+// SetDirty changes the limiter's dirty flag.
+//
+// By default it starts with dirty=true and every Do call
+// considers the game state as dirty.
+//
+// You can set dirty=false inside a Do callback
+// and then set it back to dirty=true somewhere in your
+// game's logic. If at the momeny Do is called, it will
+// do nothing as long as dirty flag is false.
+//
+// The simplest way to set dirty=true flag is to do it inside
+// your game's Update tree. It will be helpful if your game
+// has TPS value comparable to the FPS (or higher).
+// A better approach is to know for sure when the game's content
+// needs to be re-drawn but it might turn out to be too error-prone.
+func (l *FrameLimiter) SetDirty(dirty bool) {
+	l.dirty = dirty
 }
 
 func (l *FrameLimiter) GetFPS() uint {
@@ -49,7 +69,9 @@ func (l *FrameLimiter) SetFPS(fps uint) {
 	if fps == 0 {
 		l.drawMinDelay = 0
 	} else {
-		l.drawMinDelay = time.Second / time.Duration(fps)
+		// We're adding 20 here just to be sure not to skip
+		// frames that shouldn't be skipped.
+		l.drawMinDelay = time.Second / time.Duration(fps+20)
 	}
 }
 
@@ -64,6 +86,10 @@ func (l *FrameLimiter) SetFPS(fps uint) {
 //
 // See [FrameLimiter] type comment to learn more.
 func (l *FrameLimiter) Do(dst *ebiten.Image, draw func(dst *ebiten.Image)) {
+	if !l.dirty {
+		return
+	}
+
 	if l.drawMinDelay != 0 {
 		t := time.Now()
 		if t.Sub(l.prevDrawTime) < l.drawMinDelay {
