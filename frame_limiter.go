@@ -22,7 +22,8 @@ type FrameLimiter struct {
 	fps   uint
 	dirty bool
 
-	drawMinDelay time.Duration
+	timeAccum    time.Duration
+	drawDelay    time.Duration
 	prevDrawTime time.Time
 }
 
@@ -67,11 +68,11 @@ func (l *FrameLimiter) GetFPS() uint {
 func (l *FrameLimiter) SetFPS(fps uint) {
 	l.fps = fps
 	if fps == 0 {
-		l.drawMinDelay = 0
+		l.drawDelay = 0
 	} else {
-		// We're adding 20 here just to be sure not to skip
-		// frames that shouldn't be skipped.
-		l.drawMinDelay = time.Second / time.Duration(fps+20)
+		// We're adding 1 here just to be sure not to skip
+		// frames that shouldn't be skipped (or do so less often).
+		l.drawDelay = time.Second / time.Duration(fps+1)
 	}
 }
 
@@ -90,14 +91,18 @@ func (l *FrameLimiter) Do(dst *ebiten.Image, draw func(dst *ebiten.Image)) {
 		return
 	}
 
-	if l.drawMinDelay != 0 {
+	if l.drawDelay != 0 {
 		t := time.Now()
-		if t.Sub(l.prevDrawTime) < l.drawMinDelay {
+		delta := t.Sub(l.prevDrawTime)
+		l.prevDrawTime = t
+
+		l.timeAccum += min(delta, l.drawDelay)
+		if l.timeAccum < l.drawDelay {
 			return // Skip frame
 		}
 
+		l.timeAccum -= l.drawDelay
 		dst.Clear()
-		l.prevDrawTime = t
 	}
 
 	draw(dst)
