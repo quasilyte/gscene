@@ -33,9 +33,22 @@ func NewManager() *Manager {
 // The [Controller.Init] method of [c] will be called after
 // this new scene is installed.
 func (m *Manager) ChangeScene(c Controller) {
+	m.ChangeSceneConfig(ChangeSceneConfig{Controller: c})
+}
+
+type ChangeSceneConfig struct {
+	Controller   Controller
+	PanicHandler func(v any)
+}
+
+// ChangeSceneConfig is like ChangeScene, but allows more configuration.
+func (m *Manager) ChangeSceneConfig(config ChangeSceneConfig) {
 	prevScene := m.currentScene
 
+	c := config.Controller
+
 	m.currentScene = newScene(c)
+	m.currentScene.panicHandler = config.PanicHandler
 	m.currentScene.drawer = newSimpleDrawer()
 	c.Init(InitContext{Scene: m.currentScene})
 

@@ -20,6 +20,8 @@ type Scene struct {
 	objects      []Object
 	addedObjects []Object
 
+	panicHandler func(v any)
+
 	insideUpdate bool
 }
 
@@ -102,6 +104,7 @@ func (s *Scene) updateWithDelta(delta float64) {
 	// updateWithDeltaImpl implements the actual update logic.
 
 	defer func() {
+		s.insideUpdate = false
 		rv := recover()
 		if rv == nil {
 			return // The most common case
@@ -112,7 +115,11 @@ func (s *Scene) updateWithDelta(delta float64) {
 			return
 		}
 		// Some real panic is happening.
-		panic(rv)
+		if s.panicHandler != nil {
+			s.panicHandler(rv)
+		} else {
+			panic(rv)
+		}
 	}()
 
 	s.insideUpdate = true
